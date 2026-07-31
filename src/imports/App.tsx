@@ -1272,8 +1272,8 @@ export default function App() {
             src={char.img}
             alt={char.name}
             style={{
-              width: 160,
-              height: 160,
+              width: 240,
+              height: 240,
               objectFit: "contain",
               filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))",
             }}
@@ -1314,7 +1314,7 @@ export default function App() {
             <div
               style={{
                 color: "#fdf6dc",
-                fontSize: 14,
+                fontSize: 21,
                 lineHeight: 1.6,
                 fontFamily: "'Nunito',sans-serif",
                 fontWeight: 700,
@@ -1327,13 +1327,13 @@ export default function App() {
             onClick={startQuiz}
             style={{
               marginTop: 20,
-              padding: "15px 48px",
+              padding: "22px 72px",
               borderRadius: 50,
               border: "3px solid #7a5610",
               background: "linear-gradient(145deg,#ffe066,#f5c518,#c78c00)",
               color: "#3a2000",
               fontFamily: "'Fredoka One', cursive",
-              fontSize: 20,
+              fontSize: 30,
               cursor: "pointer",
               boxShadow: "0 5px 0 #5a3e08, 0 7px 16px rgba(0,0,0,0.4)",
               transition: "transform 0.08s",
