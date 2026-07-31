@@ -1,0 +1,10 @@
+{
+  "description": "Enables dynamic layering and swapping of game assets for customizable scenes with independent backgrounds, characters, and UI elements for flexible design.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
