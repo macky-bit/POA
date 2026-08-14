@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import BackgroundLayer from "@/layers/BackgroundLayer";
 import TitleLayer from "@/layers/TitleLayer";
 import CharacterLayer from "@/layers/CharacterLayer";
@@ -398,16 +398,92 @@ export default function App() {
   const isLocked = !unlocked.includes(char.id);
   const coinPopRef = useRef(0);
 
+  // ─── Audio Refs ────────────────────────────────────────────────────────────
+  const bgMusicRef = useRef<HTMLAudioElement>(null!);
+  const btnClickRef = useRef<HTMLAudioElement>(null!);
+  const checkSoundRef = useRef<HTMLAudioElement>(null!);
+  const wrongSoundRef = useRef<HTMLAudioElement>(null!);
+
+  // ─── Play Sound Function ───────────────────────────────────────────────────
+  const playSound = useCallback(
+    (soundRef: React.RefObject<HTMLAudioElement>) => {
+      if (!muted && soundRef.current) {
+        soundRef.current.currentTime = 0;
+        soundRef.current.play().catch(() => {
+          // Silently handle autoplay restrictions
+        });
+      }
+    },
+    [muted],
+  );
+
+  // ─── Audio Elements ─────────────────────────────────────────────────────────
+  // Rendered on every screen (each screen below returns independently, so this
+  // must be included inside each returned tree rather than after it).
+  const audioLayer = (
+    <>
+      <audio
+        ref={bgMusicRef}
+        src="/src/music/bgmusic.mp3"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={btnClickRef}
+        src="/src/music/btnClick.mp3"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={checkSoundRef}
+        src="/src/music/check.mp3"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={wrongSoundRef}
+        src="/src/music/wrong.mp3"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+    </>
+  );
+
+  // ─── Manage Background Music ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!bgMusicRef.current) return;
+
+    if (screen === "home" || screen === "quiz") {
+      bgMusicRef.current.loop = true;
+      bgMusicRef.current.volume = 0.3;
+      if (muted) {
+        bgMusicRef.current.pause();
+      } else {
+        bgMusicRef.current.play().catch(() => {
+          // Silently handle autoplay restrictions
+        });
+      }
+    } else {
+      bgMusicRef.current.pause();
+    }
+  }, [screen, muted]);
+
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   }, []);
 
-  const prevChar = () =>
+  const prevChar = () => {
+    playSound(btnClickRef);
     setCharIdx((i) => (i - 1 + CHARACTERS.length) % CHARACTERS.length);
-  const nextChar = () => setCharIdx((i) => (i + 1) % CHARACTERS.length);
+  };
+  const nextChar = () => {
+    playSound(btnClickRef);
+    setCharIdx((i) => (i + 1) % CHARACTERS.length);
+  };
 
   const handlePlay = () => {
+    playSound(btnClickRef);
     if (isLocked) {
       showToast(`🔒 Need ${char.unlockCost} coins to unlock ${char.name}!`);
       return;
@@ -420,13 +496,18 @@ export default function App() {
     setScreen("intro");
   };
 
-  const startQuiz = () => setScreen("quiz");
+  const startQuiz = () => {
+    playSound(btnClickRef);
+    setScreen("quiz");
+  };
 
   const handleAnswer = (idx: number) => {
     if (answerState !== "idle") return;
+    playSound(btnClickRef);
     const q = char.questions[qIdx];
     setSelected(idx);
     if (idx === q.correct) {
+      playSound(checkSoundRef);
       setAnswerState("correct");
       setCorrectCount((c) => c + 1);
       setCharAnim("bounce");
@@ -451,6 +532,7 @@ export default function App() {
         }
       });
     } else {
+      playSound(wrongSoundRef);
       setAnswerState("wrong");
       setCharAnim("shake");
     }
@@ -458,6 +540,7 @@ export default function App() {
   };
 
   const handleNext = () => {
+    playSound(btnClickRef);
     if (qIdx < char.questions.length - 1) {
       setQIdx((q) => q + 1);
       setSelected(null);
@@ -470,6 +553,7 @@ export default function App() {
   };
 
   const goHome = () => {
+    playSound(btnClickRef);
     setScreen("home");
     setShowHint(false);
     setShowSettings(false);
@@ -479,6 +563,7 @@ export default function App() {
   if (screen === "home") {
     return (
       <div className="game-wrap">
+        {audioLayer}
         {/* ── LAYER: background ── fills viewport, behind everything */}
         <BackgroundLayer />
 
@@ -523,7 +608,10 @@ export default function App() {
             <button
               className="gold-btn"
               style={{ width: 50, height: 50 }}
-              onClick={() => setShowSettings(true)}
+              onClick={() => {
+                playSound(btnClickRef);
+                setShowSettings(true);
+              }}
               aria-label="Settings"
             >
               {/* ── LAYER: icon_settings ── */}
@@ -653,6 +741,7 @@ export default function App() {
               className="gold-btn"
               style={{ width: 99, height: 99 }}
               onClick={() => {
+                playSound(btnClickRef);
                 setHintPage(0);
                 setShowHint(true);
               }}
@@ -738,7 +827,10 @@ export default function App() {
                   📚 Accounting Basics
                 </span>
                 <button
-                  onClick={() => setShowHint(false)}
+                  onClick={() => {
+                    playSound(btnClickRef);
+                    setShowHint(false);
+                  }}
                   style={{
                     background: "rgba(255,255,255,0.15)",
                     border: "none",
@@ -803,7 +895,10 @@ export default function App() {
                   <button
                     key={i}
                     className={`dot${i === hintPage ? " active" : ""}`}
-                    onClick={() => setHintPage(i)}
+                    onClick={() => {
+                      playSound(btnClickRef);
+                      setHintPage(i);
+                    }}
                     style={{ border: "none", cursor: "pointer", padding: 0 }}
                     aria-label={`Card ${i + 1}`}
                   />
@@ -824,7 +919,10 @@ export default function App() {
                     cursor: hintPage === 0 ? "default" : "pointer",
                     opacity: hintPage === 0 ? 0.4 : 1,
                   }}
-                  onClick={() => setHintPage((p) => Math.max(0, p - 1))}
+                  onClick={() => {
+                    playSound(btnClickRef);
+                    setHintPage((p) => Math.max(0, p - 1));
+                  }}
                   disabled={hintPage === 0}
                 >
                   ◀ Back
@@ -841,11 +939,14 @@ export default function App() {
                     fontSize: 15,
                     cursor: "pointer",
                   }}
-                  onClick={() =>
-                    hintPage < HINT_CARDS.length - 1
-                      ? setHintPage((p) => p + 1)
-                      : setShowHint(false)
-                  }
+                  onClick={() => {
+                    playSound(btnClickRef);
+                    if (hintPage < HINT_CARDS.length - 1) {
+                      setHintPage((p) => p + 1);
+                    } else {
+                      setShowHint(false);
+                    }
+                  }}
                 >
                   {hintPage < HINT_CARDS.length - 1 ? "Next ▶" : "Got it! ✓"}
                 </button>
@@ -926,7 +1027,17 @@ export default function App() {
                     {muted ? "Sound Off" : "Sound On"}
                   </span>
                   <button
-                    onClick={() => setMuted((m) => !m)}
+                    onClick={() => {
+                      setMuted((m) => {
+                        const next = !m;
+                        // Only confirm with a click when sound is turning ON
+                        if (!next && btnClickRef.current) {
+                          btnClickRef.current.currentTime = 0;
+                          btnClickRef.current.play().catch(() => {});
+                        }
+                        return next;
+                      });
+                    }}
                     style={{
                       width: 52,
                       height: 28,
@@ -992,6 +1103,7 @@ export default function App() {
                     fontSize: 14,
                   }}
                   onClick={() => {
+                    playSound(btnClickRef);
                     if (confirm("Reset all progress? This cannot be undone.")) {
                       setCoins(0);
                       setUnlocked(["lion"]);
@@ -1016,7 +1128,10 @@ export default function App() {
                   fontSize: 16,
                   cursor: "pointer",
                 }}
-                onClick={() => setShowSettings(false)}
+                onClick={() => {
+                  playSound(btnClickRef);
+                  setShowSettings(false);
+                }}
               >
                 Close
               </button>
@@ -1092,7 +1207,10 @@ export default function App() {
                   fontSize: 16,
                   cursor: "pointer",
                 }}
-                onClick={() => setShowUnlock(null)}
+                onClick={() => {
+                  playSound(btnClickRef);
+                  setShowUnlock(null);
+                }}
               >
                 Awesome! 🌟
               </button>
@@ -1107,6 +1225,7 @@ export default function App() {
   if (screen === "intro") {
     return (
       <div className="game-wrap">
+        {audioLayer}
         {/* ── LAYER: background ── */}
         <BackgroundLayer />
         <div
@@ -1228,6 +1347,7 @@ export default function App() {
 
     return (
       <div className="game-wrap">
+        {audioLayer}
         {/* ── LAYER: background ── */}
         <BackgroundLayer />
         <div
@@ -1307,13 +1427,7 @@ export default function App() {
             <CharacterLayer
               characterId={char.id}
               size={320}
-              animClass={
-                charAnim === "bounce"
-                  ? "bounce"
-                  : charAnim === "shake"
-                    ? "shake"
-                    : ""
-              }
+              animClass={charAnim !== "idle" ? charAnim : ""}
               style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))" }}
             />
             {coinPops.map((p) => (
@@ -1455,6 +1569,7 @@ export default function App() {
     const g = GRADES.find((gr) => correctCount >= gr.min)!;
     return (
       <div className="game-wrap">
+        {audioLayer}
         {/* ── LAYER: background ── */}
         <BackgroundLayer />
         <div
@@ -1601,6 +1716,7 @@ export default function App() {
             </button>
             <button
               onClick={() => {
+                playSound(btnClickRef);
                 setQIdx(0);
                 setSelected(null);
                 setAnswerState("idle");
@@ -1629,5 +1745,6 @@ export default function App() {
     );
   }
 
+  // Unreachable: `screen` is a 4-value union and every value is handled above.
   return null;
 }
